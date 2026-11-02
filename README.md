@@ -1,79 +1,79 @@
-# 🎸 Empório da Música - Assistente Virtual (AI Agent)
+# 🎸 Empório da Música - Virtual Assistant (AI Agent)
  
-Protótipo de agente de atendimento baseado em LLM construído para o desafio técnico de AI Engineer da Artefact. O assistente é capaz de interagir com clientes assumindo a persona da loja, consultando um banco de dados estruturado (SQL) em tempo real para produtos e pedidos, e utilizando RAG para responder sobre políticas internas.
+A prototype LLM-based customer service agent built for the Artefact AI Engineer technical challenge. The assistant interacts with customers while playing the role of the store, queries a structured SQL database in real time for products and orders, and uses RAG to answer questions about internal policies.
  
-## 🚀 Como Executar o Projeto
+## 🚀 How to Run the Project
  
-### Pré-requisitos
+### Prerequisites
 * Python 3.10+
-* Chave de API da Groq (gratuita)
-### Passo a Passo
+* Groq API key (free)
+### Step by Step
  
-1. **Clone o repositório:**
+1. **Clone the repository:**
 ```bash
    git clone https://github.com/luisjro16/desafio_tecnico_ai_eng_artefact
    cd desafio_tecnico_ai_eng_artefact
 ```
  
-2. **Crie e ative o ambiente virtual:**
+2. **Create and activate the virtual environment:**
 ```bash
    python -m venv venv
-   # No Windows:
+   # On Windows:
    .\venv\Scripts\activate
-   # No Linux/Mac:
+   # On Linux/Mac:
    source venv/bin/activate
 ```
  
-3. **Instale as dependências:**
+3. **Install the dependencies:**
 ```bash
    pip install -r requirements.txt
 ```
-   (Pacotes principais: langgraph, langchain-groq, langchain-huggingface, streamlit, pandas, faiss-cpu, sentence-transformers).
+   (Main packages: langgraph, langchain-groq, langchain-huggingface, streamlit, pandas, faiss-cpu, sentence-transformers).
  
-4. **Configuração de Variáveis de Ambiente:**
-   Crie um arquivo `.env` na raiz do projeto e adicione a sua chave de API da Groq:
+4. **Environment variable configuration:**
+   Create a `.env` file in the project root and add your Groq API key:
 ```env
-   GROQ_API_KEY=gsk_sua_chave_aqui
+   GROQ_API_KEY=gsk_your_key_here
 ```
  
-5. **Inicialize o Banco de Dados:**
-   Execute o script de ingestão de dados. Ele lerá os arquivos CSV da pasta `data/` e criará um banco SQLite local (`emporio.db`).
+5. **Initialize the database:**
+   Run the data ingestion script. It reads the CSV files in the `data/` folder and creates a local SQLite database (`emporio.db`).
 ```bash
    python -m src.database
 ```
  
-6. **Inicie a Interface Web:**
+6. **Start the web interface:**
 ```bash
    streamlit run app.py
 ```
-   O navegador abrirá automaticamente em http://localhost:8501.
+   The browser will open automatically at http://localhost:8501.
  
-> **Dica de Observabilidade:** Enquanto interage com o chat no navegador, acompanhe o terminal (console) para ver os logs do fluxo de pensamento (Chain-of-Thought) do agente, mostrando as queries SQL e as buscas RAG em tempo real.
+> **Observability tip:** While chatting in the browser, watch the terminal (console) to see the agent's chain-of-thought logs, showing the SQL queries and RAG searches in real time.
  
-## 🧠 Justificativa das Decisões Técnicas
+## 🧠 Technical Decisions
  
-**Framework de Agente (LangGraph):** Optei pelo LangGraph (em vez de chains lineares simples) para construir um agente com arquitetura ReAct (Reasoning and Acting). Isso permite que o LLM decida autonomamente quando deve usar uma ferramenta, analisar o resultado e, se houver um erro (ex: buscar uma coluna inexistente), corrigir a própria query SQL e tentar novamente antes de responder ao usuário.
+**Agent Framework (LangGraph):** I chose LangGraph (instead of simple linear chains) to build an agent with a ReAct (Reasoning and Acting) architecture. This lets the LLM autonomously decide when to use a tool, analyze the result, and, if there is an error (e.g., querying a nonexistent column), fix its own SQL query and try again before responding to the user.
  
-**Modelo e Provedor (openai/gpt-oss-120b):** Escolhi este modelo robusto de 120 bilhões de parâmetros devido à sua altíssima capacidade de raciocínio lógico avançado e tool calling preciso. Para um agente SQL autônomo que precisa interpretar esquemas, formular queries complexas (como JOINs) e seguir instruções estritas de persona sem alucinar, o uso de um modelo de grande escala garante uma taxa de sucesso muito superior.
+**Model and Provider (openai/gpt-oss-120b):** I chose this robust 120-billion-parameter model because of its very strong advanced logical reasoning and precise tool calling. For an autonomous SQL agent that needs to interpret schemas, write complex queries (such as JOINs), and follow strict persona instructions without hallucinating, a large-scale model greatly improves the success rate.
  
-**Tratamento de Dados Estruturados (SQLite):** Em vez de injetar CSVs inteiros no prompt (o que estouraria a janela de contexto e causaria alucinações), criei um script que converte os CSVs da operação para um banco SQLite em memória. O agente recebeu uma Tool de execução de SQL, permitindo consultas dinâmicas de preços e status de pedidos.
+**Structured Data Handling (SQLite):** Instead of injecting entire CSVs into the prompt (which would overflow the context window and cause hallucinations), I wrote a script that converts the store's CSVs into a SQLite database. The agent is given a SQL execution tool, enabling dynamic queries about prices and order status.
  
-**Arquitetura de Retrieval (RAG via FAISS):** Para o manual de políticas (PDF), implementei um RAG simples usando FAISS e o modelo de embeddings `all-MiniLM-L6-v2` (HuggingFace) rodando localmente. Isso economiza custos de API de embeddings e garante recuperação rápida de regras de negócio.
+**Retrieval Architecture (RAG via FAISS):** For the policy manual (PDF), I implemented a simple RAG using FAISS and the `all-MiniLM-L6-v2` embedding model (HuggingFace), running locally. This avoids embedding API costs and ensures fast retrieval of business rules.
  
-**Estratégia de Prompt (System Prompt ciente de esquema):** O agente foi instruído com um prompt rígido para blindar a persona (recusar venda de acessórios). Para evitar falhas em queries SQL, o prompt fornece um mapa básico do banco, mas incentiva a Auto-descoberta: o agente foi instruído a usar `PRAGMA table_info()` ou `SELECT *` para investigar tabelas e entender relacionamentos (JOINs) por conta própria quando não souber a estrutura.
+**Prompt Strategy (schema-aware system prompt):** The agent was given a strict prompt to hold its persona (refusing to sell accessories). To avoid SQL query failures, the prompt provides a basic map of the database but encourages self-discovery: the agent is instructed to use `PRAGMA table_info()` or `SELECT *` to inspect tables and figure out relationships (JOINs) on its own when it doesn't know the structure.
  
-**Interface (Streamlit):** Escolhida por permitir a criação de um protótipo visualmente limpo e funcional em poucos minutos, focando o esforço de engenharia no "cérebro" da aplicação.
+**Interface (Streamlit):** Chosen because it allows building a visually clean, functional prototype in minutes, keeping the engineering effort focused on the application's "brain."
  
-## 🚧 Limitações Conhecidas e Próximos Passos (Com mais tempo)
+## 🚧 Known Limitations and Next Steps (With More Time)
  
-* **RAG Básico (Chunking):** Atualmente, o RAG usa um text-splitter simples. Com mais tempo, eu implementaria uma estratégia de Semantic Chunking e adicionaria um modelo de Re-ranking (ex: Cohere) no retriever para garantir que regras de devolução não se misturem com regras de garantia.
-* **Memória e Persistência:** A memória atual depende do `session_state` do Streamlit. Em um cenário real, eu integraria o LangGraph Checkpointer (com PostgreSQL ou Redis) para salvar o estado da conversa e permitir que o usuário retome o atendimento horas depois.
-* **Limite de Rate (API Groq):** Como a API gratuita da Groq possui limites de requisições por minuto, o agente pode falhar se cometer erros repetidos de SQL no mesmo loop. A solução de produção envolveria usar provedores pagos (como OpenAI/GPT-4o) ou implementar fallback models.
-* **Validação de Output SQL:** O agente tem liberdade de leitura total no banco. Com mais tempo, eu adicionaria uma camada de segurança (validação pydantic ou permissões no DB) para evitar que o LLM execute queries destrutivas (embora ele só tenha recebido ordens de leitura).
-## 🤖 Uso de Assistentes de Código (Workflow com IA)
+* **Basic RAG (Chunking):** The RAG currently uses a simple text splitter. With more time, I would implement a Semantic Chunking strategy and add a Re-ranking model (e.g., Cohere) to the retriever so that return rules don't get mixed up with warranty rules.
+* **Memory and Persistence:** Current memory depends on Streamlit's `session_state`. In a real scenario, I would integrate the LangGraph Checkpointer (with PostgreSQL or Redis) to save conversation state and let users resume a support session hours later.
+* **Rate Limits (Groq API):** Since the free Groq API has per-minute request limits, the agent may fail if it makes repeated SQL errors in the same loop. A production solution would involve using paid providers (such as OpenAI/GPT-4o) or implementing fallback models.
+* **SQL Output Validation:** The agent has full read access to the database. With more time, I would add a safety layer (Pydantic validation or DB-level permissions) to prevent the LLM from executing destructive queries (even though it has only been given read instructions).
+## 🤖 Use of Code Assistants (AI Workflow)
  
-Durante o desenvolvimento, utilizei LLM conversacional (Gemini) atuando como um pair programmer. O meu workflow com a IA não foi focado em "gerar código pronto", mas sim em estruturação e debug:
+During development, I used a conversational LLM (Gemini) as a pair programmer. My workflow with the AI was not focused on "generating ready-made code," but on structuring and debugging:
  
-* **Decisão Arquitetural:** Discuti as abordagens (Zero-Shot vs ReAct) e validei a decisão de usar LangGraph para roteamento inteligente de ferramentas.
-* **Refinamento do Prompt de Sistema:** A IA foi crucial para iterar o `SYSTEM_PROMPT`. Quando os testes revelaram que o agente não encontrava "violões" buscando apenas na tabela de produtos, usamos a IA para reescrever as instruções, ensinando o agente a usar JOINs com a tabela de categorias.
-* **Debug de Componentes e Interface:** A IA auxiliou na interpretação de Tracebacks complexos do LangGraph (diferenças de versão no `messages_modifier`) e na solução de um conflito visual no Streamlit, onde o símbolo monetário (R$) estava sendo confundido com comandos LaTeX.
+* **Architectural Decisions:** I discussed approaches (Zero-Shot vs ReAct) and validated the decision to use LangGraph for intelligent tool routing.
+* **Refining the System Prompt:** The AI was crucial in iterating on the `SYSTEM_PROMPT`. When tests revealed that the agent couldn't find "violões" (acoustic guitars) by searching only the products table, we used the AI to rewrite the instructions, teaching the agent to use JOINs with the categories table.
+* **Component and Interface Debugging:** The AI helped interpret complex LangGraph Tracebacks (version differences in `messages_modifier`) and resolve a visual conflict in Streamlit, where the currency symbol (R$) was being interpreted as LaTeX commands.
