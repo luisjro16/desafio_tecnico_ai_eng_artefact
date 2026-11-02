@@ -11,7 +11,7 @@ Protótipo de agente de atendimento baseado em LLM construído para o desafio t�
  
 1. **Clone o repositório:**
 ```bash
-   git clone <https://github.com/luisjro16/desafio_tecnico_ai_eng_artefact>
+   git clone https://github.com/luisjro16/desafio_tecnico_ai_eng_artefact
    cd desafio_tecnico_ai_eng_artefact
 ```
  
